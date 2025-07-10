@@ -19,7 +19,9 @@ const Breadcrumb = ({
       <ol className="list-reset flex flex-wrap">
         {items.map((item, idx) => (
           <li key={idx} className="flex items-center">
-            {item.href ? (
+            {idx === items.length - 1 ? (
+              <span className="text-gray-600 font-medium">{item.name}</span>
+            ) : item.href ? (
               <Link href={item.href} className={linkClassName}>
                 {item.name}
               </Link>

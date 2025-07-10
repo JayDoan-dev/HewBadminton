@@ -6,12 +6,16 @@ import Image from "next/image";
 import Menu from "./Menu";
 import SearchBar from "./SearchBar";
 import dynamic from "next/dynamic";
+import { useWixClient } from "@/hooks/useWixClient";
 // import NavIcons from "./NavIcons";
 
 const NavIcons = dynamic(() => import("./NavIcons"), { ssr: false });
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const wixClient = useWixClient();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +24,26 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Check login state using Wix auth
+    const checkLogin = async () => {
+      try {
+        const loggedIn = await wixClient.auth.loggedIn();
+        setIsLoggedIn(loggedIn);
+        if (loggedIn) {
+          const res = await wixClient.members.getCurrentMember();
+          setUser(res.member ?? null);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    };
+    checkLogin();
+  }, [wixClient]);
 
   return (
     <div
@@ -32,6 +56,11 @@ const Navbar = () => {
         <Link href="/">
           <Image src="/images/Logo.png" alt="Logo" width={120} height={120} />
         </Link>
+        {isLoggedIn && user?.profile?.nickname && (
+          <span className="ml-2 text-base font-semibold text-gray-700">
+            Hi, {user.profile.nickname}!
+          </span>
+        )}
         <Menu />
       </div>
 

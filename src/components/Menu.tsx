@@ -9,12 +9,21 @@ import {
   Tag,
   Info,
   Mail,
+  LogIn,
   LogOut,
   ShoppingCart,
 } from "lucide-react";
+import { useWixClient } from "@/hooks/useWixClient";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const Menu = () => {
   const [open, setOpen] = useState(false);
+  const wixClient = useWixClient();
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const containerVariants = {
@@ -60,13 +69,59 @@ const Menu = () => {
     };
   }, [open]);
 
+  useEffect(() => {
+    // Check login state using Wix auth
+    const checkLogin = async () => {
+      try {
+        const loggedIn = await wixClient.auth.loggedIn();
+        setIsLoggedIn(loggedIn);
+        if (loggedIn) {
+          const res = await wixClient.members.getCurrentMember();
+          setUser(res.member ?? null);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    };
+    if (open) checkLogin();
+  }, [open, wixClient]);
+
+  const handleLogoutClick = async () => {
+    setIsLoading(true);
+    Cookies.remove("refreshToken");
+    const { logoutUrl } = await wixClient.auth.logout(window.location.href);
+    setIsLoading(false);
+    setOpen(false);
+    router.push(logoutUrl);
+  };
+
+  const handleLoginClick = () => {
+    setOpen(false);
+    router.push("/login");
+  };
+
   const links = [
     { label: "Home", href: "/", icon: <Home className="w-5 h-5" /> },
     { label: "Shop", href: "/list?cat=all-products", icon: <ShoppingBag className="w-5 h-5" /> },
     { label: "Deals", href: "/deals", icon: <Tag className="w-5 h-5" /> },
     { label: "About", href: "/about", icon: <Info className="w-5 h-5" /> },
     { label: "Contact", href: "/contact", icon: <Mail className="w-5 h-5" /> },
-    { label: "Logout", href: "/logout", icon: <LogOut className="w-5 h-5" /> },
+    isLoggedIn
+      ? {
+          label: isLoading ? "Logging out..." : "Logout",
+          href: "#",
+          icon: <LogOut className="w-5 h-5" />,
+          onClick: handleLogoutClick,
+        }
+      : {
+          label: "Login",
+          href: "/login",
+          icon: <LogIn className="w-5 h-5" />,
+          onClick: handleLoginClick,
+        },
     { label: "Cart", href: "/cart", icon: <ShoppingCart className="w-5 h-5" /> },
   ];
 
@@ -104,7 +159,10 @@ const Menu = () => {
             exit="hidden"
             className="fixed top-0 left-0 w-screen h-screen bg-white flex flex-col justify-center items-center z-40 px-6"
           >
-            {links.map(({ label, href, icon }) => (
+            {isLoggedIn && user?.profile?.nickname && (
+              <div className="mb-6 text-lg font-semibold text-gray-700">Hi, {user.profile.nickname}!</div>
+            )}
+            {links.map(({ label, href, icon, onClick }) => (
               <motion.div
                 key={label}
                 variants={linkVariants}
@@ -112,8 +170,16 @@ const Menu = () => {
               >
                 <Link
                   href={href}
-                  onClick={() => setOpen(false)}
+                  onClick={(e) => {
+                    if (onClick) {
+                      e.preventDefault();
+                      onClick();
+                    } else {
+                      setOpen(false);
+                    }
+                  }}
                   className="flex items-center gap-4 w-full py-4 px-6 text-center text-xl text-gray-800 transition-all duration-200 hover:bg-orange-100 hover:text-orange-600 rounded-md"
+                  aria-disabled={isLoading && label === "Logging out..."}
                 >
                   {icon}
                   <span className="flex-1 text-left">{label}</span>

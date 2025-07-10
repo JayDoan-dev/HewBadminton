@@ -14,6 +14,7 @@ const CartPage = () => {
   const wixClient = useWixClient();
   const { cart, isLoading, removeItem } = useCartStore();
   const [allVariants, setAllVariants] = useState<products.Variant[]>([]);
+  const [coupon, setCoupon] = useState("");
 
   useEffect(() => {
     const fetchVariants = async () => {
@@ -133,7 +134,12 @@ const CartPage = () => {
             >
               {item.image && (
                 <Image
-                  src={wixMedia.getScaledToFillImageUrl(item.image, 100, 120, {})}
+                  src={wixMedia.getScaledToFillImageUrl(
+                    item.image,
+                    100,
+                    120,
+                    {}
+                  )}
                   alt=""
                   width={100}
                   height={120}
@@ -172,8 +178,7 @@ const CartPage = () => {
 
                 <div className="mt-2 flex justify-between items-center text-sm">
                   <div>
-                    Qty:{" "}
-                    <span className="font-medium">{item.quantity}</span>
+                    Qty: <span className="font-medium">{item.quantity}</span>
                     {/* Optional: Add qty controls here */}
                   </div>
                   <button
@@ -192,7 +197,7 @@ const CartPage = () => {
         <div className="mt-6">
           <Link
             href="/"
-            className="inline-block text-sm text-blue-600 hover:underline"
+            className="inline-block text-sm text-hew hover:underline"
           >
             &larr; Continue Shopping
           </Link>
@@ -242,7 +247,23 @@ const CartPage = () => {
             )}
           </span>
         </div>
-
+        <form className="mt-6 mb-4 flex gap-2" onSubmit={(e) => e.preventDefault()}>
+          <input
+            type="text"
+            value={coupon}
+            onChange={(e) => setCoupon(e.target.value)}
+            placeholder="Coupon code"
+            className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            disabled={false}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-60 text-sm font-semibold"
+            disabled={false}
+          >
+            Apply
+          </button>
+        </form>
         <button
           className="w-full py-3 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-60"
           disabled={isLoading}
@@ -250,10 +271,10 @@ const CartPage = () => {
         >
           Proceed to Checkout
         </button>
-
         <p className="text-xs text-gray-500 mt-2">
           By placing your order, you agree to our Terms & Conditions.
         </p>
+        {/* Coupon Input (UI only, below total/checkout) */}
       </div>
     </div>
   );
