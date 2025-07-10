@@ -30,7 +30,7 @@ const MyProfilePage = () => {
     return (
       <div className="max-w-xl mx-auto py-20 text-center">
         <h1 className="text-2xl font-bold mb-4">Profile Not Found!</h1>
-        <p className="text-gray-500 mb-6">Please log in to view your profile.</p>
+        <p className="text-gray-500 mb-6">Please log in to view your profile!!</p>
       </div>
     );
   }
@@ -47,7 +47,7 @@ const MyProfilePage = () => {
         />
         <h1 className="text-2xl font-bold text-gray-800">{user.profile?.nickname || "User"}</h1>
         <p className="text-gray-600">
-          {user.profile?.email ? user.profile.email : <span className="italic text-gray-400">Email not available</span>}
+          {user.profile?.email ? user.profile.email : <span className="italic text-gray-400">Email not available!</span>}
         </p>
         <div className="mt-6 w-full">
           <h2 className="text-lg font-semibold mb-2">Account Details</h2>
