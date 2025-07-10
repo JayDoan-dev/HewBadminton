@@ -9,6 +9,7 @@ import { useWixClient } from "@/hooks/useWixClient";
 import Cookies from "js-cookie";
 import { useCartStore } from "@/hooks/useCartStore";
 import { motion, AnimatePresence } from "framer-motion";
+import { products } from "@wix/stores";
 
 type Member = {
   _id?: string | null;
@@ -38,11 +39,37 @@ const NavIcons = () => {
   const cartRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  const { counter, getCart } = useCartStore();
+  const { cart, counter, getCart } = useCartStore();
+  const [allVariants, setAllVariants] = useState<products.Variant[]>([]);
 
   useEffect(() => {
     getCart(wixClient);
   }, [wixClient, getCart]);
+
+  // Fetch all variants for products in the cart
+  useEffect(() => {
+    const fetchVariants = async () => {
+      if (!cart?.lineItems?.length) {
+        setAllVariants([]);
+        return;
+      }
+      const variantArrays: products.Variant[][] = await Promise.all(
+        cart.lineItems.map(async (item) => {
+          const catalogId = item.catalogReference?.catalogItemId;
+          if (!catalogId) return [];
+          try {
+            const product = await wixClient.products.getProduct(catalogId);
+            // Try both product.variants and product.product?.variants for compatibility
+            return (product as any).variants || product.product?.variants || [];
+          } catch (e) {
+            return [];
+          }
+        })
+      );
+      setAllVariants(variantArrays.flat());
+    };
+    fetchVariants();
+  }, [cart, wixClient]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -248,7 +275,7 @@ const NavIcons = () => {
             transition={{ duration: 0.2 }}
             className="absolute bottom-6 right-0 z-20"
           >
-            <CartModal />
+            <CartModal variants={allVariants} />
           </motion.div>
         )}
       </AnimatePresence>

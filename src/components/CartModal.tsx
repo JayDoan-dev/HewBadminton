@@ -7,8 +7,9 @@ import { useWixClient } from "@/hooks/useWixClient";
 import { currentCart } from "@wix/ecom";
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
+import { products } from "@wix/stores";
 
-const CartModal = () => {
+const CartModal = ({ variants }: { variants?: products.Variant[] }) => {
   const wixClient = useWixClient();
   const { cart, isLoading, removeItem } = useCartStore();
 
@@ -42,9 +43,20 @@ const CartModal = () => {
     minimumFractionDigits: 2,
   });
 
+  // Helper to get variant options as string
+  const getVariantOptionsString = (item: any) => {
+    const variantId = item.catalogReference?.options?.variantId;
+    if (!variantId || !variants) return null;
+    const variant = variants.find(v => v._id === variantId);
+    if (!variant || !variant.choices) return null;
+    return Object.entries(variant.choices)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(" | ");
+  };
+
   return (
     <div className="w-max absolute p-4 rounded-xl shadow-[0_3px_10px_rgb(0,0,0,0.2)] bg-white top-12 right-0 flex flex-col gap-6 z-20">
-      {!cart.lineItems ? (
+      {!cart?.lineItems?.length ? (
         <div className="text-center flex flex-col items-center gap-2 p-6 text-gray-500">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +126,7 @@ const CartModal = () => {
                       </div>
                     </div>
                     {/* DESC */}
-                    <div>
+                    <div className="flex items-center gap-2 flex-wrap">
                       {item.availability?.status === "AVAILABLE" ? (
                         <span className="inline-block text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded-xl">
                           In Stock
@@ -122,6 +134,12 @@ const CartModal = () => {
                       ) : (
                         <span className="text-sm text-gray-500">
                           {item.availability?.status}
+                        </span>
+                      )}
+                      {/* Product Variant Options */}
+                      {getVariantOptionsString(item) && (
+                        <span className="text-xs text-gray-600 bg-gray-100 rounded px-2 py-1 ml-1">
+                          {getVariantOptionsString(item)}
                         </span>
                       )}
                     </div>
@@ -152,15 +170,13 @@ const CartModal = () => {
               <span>Subtotal</span>
               <span>
                 {formatter.format(
-                  cart.lineItems
-                    ? cart.lineItems.reduce(
-                        (acc, item) =>
-                          acc +
-                          ((Number(item.price?.amount) || 0) *
-                            (item.quantity ?? 1)),
-                        0
-                      )
-                    : 0
+                  cart.lineItems.reduce(
+                    (acc, item) =>
+                      acc +
+                      ((Number(item.price?.amount) || 0) *
+                        (item.quantity ?? 1)),
+                    0
+                  )
                 )}
               </span>
             </div>

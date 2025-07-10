@@ -7,10 +7,47 @@ import { media as wixMedia } from "@wix/sdk";
 import { useWixClient } from "@/hooks/useWixClient";
 import { currentCart } from "@wix/ecom";
 import { Trash2 } from "lucide-react";
+import { products } from "@wix/stores";
+import { useEffect, useState } from "react";
 
 const CartPage = () => {
   const wixClient = useWixClient();
   const { cart, isLoading, removeItem } = useCartStore();
+  const [allVariants, setAllVariants] = useState<products.Variant[]>([]);
+
+  useEffect(() => {
+    const fetchVariants = async () => {
+      if (!cart?.lineItems?.length) {
+        setAllVariants([]);
+        return;
+      }
+      const variantArrays: products.Variant[][] = await Promise.all(
+        cart.lineItems.map(async (item) => {
+          const catalogId = item.catalogReference?.catalogItemId;
+          if (!catalogId) return [];
+          try {
+            const product = await wixClient.products.getProduct(catalogId);
+            return (product as any).variants || product.product?.variants || [];
+          } catch (e) {
+            return [];
+          }
+        })
+      );
+      setAllVariants(variantArrays.flat());
+    };
+    fetchVariants();
+  }, [cart, wixClient]);
+
+  // Helper to get variant options as string
+  const getVariantOptionsString = (item: any) => {
+    const variantId = item.catalogReference?.options?.variantId;
+    if (!variantId || !allVariants) return null;
+    const variant = allVariants.find((v) => v._id === variantId);
+    if (!variant || !variant.choices) return null;
+    return Object.entries(variant.choices)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(" | ");
+  };
 
   const formatter = new Intl.NumberFormat("en-CA", {
     style: "currency",
@@ -44,14 +81,37 @@ const CartPage = () => {
 
   if (!cart.lineItems || cart.lineItems.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto py-20 text-center">
-        <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
-        <p className="text-gray-500 mb-6">
+      <div className="max-w-4xl mx-auto py-20 flex flex-col items-center justify-center text-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={120}
+          height={120}
+          fill="none"
+          viewBox="0 0 48 48"
+          className="mb-6 opacity-60 drop-shadow-lg mt-16"
+        >
+          <rect width="48" height="48" rx="24" fill="#E3E3E3" />
+          <path
+            d="M16 17h-2a1 1 0 0 0-1 1v1.5a1 1 0 0 0 1 1h2m0 0h16m-16 0 2.2 13.2A2 2 0 0 0 20.2 34h7.6a2 2 0 0 0 2-1.8L32 19m-16 0V17a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v2"
+            stroke="#AFAFAF"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="20" cy="38" r="2" fill="#AFAFAF" />
+          <circle cx="28" cy="38" r="2" fill="#AFAFAF" />
+        </svg>
+        <h1 className="mt-4 text-3xl font-bold mb-2 text-gray-800">
+          Your Cart is Empty !
+        </h1>
+        <p className="text-gray-500 mb-6 text-base">
           Looks like you haven’t added anything yet.
+          <br />
+          Start shopping and fill your cart with awesome products!
         </p>
         <Link
           href="/"
-          className="px-6 py-3 bg-orange-500 text-white rounded hover:bg-orange-600"
+          className="px-8 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-full shadow-lg hover:from-orange-500 hover:to-orange-600 transition-all text-lg font-semibold mt-2"
         >
           Continue Shopping
         </Link>
@@ -90,7 +150,7 @@ const CartPage = () => {
                       {formatter.format(Number(item.price?.amount) || 0)}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-sm text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
                     Status:{" "}
                     {item.availability?.status === "AVAILABLE" ? (
                       <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
@@ -99,6 +159,12 @@ const CartPage = () => {
                     ) : (
                       <span className="inline-block px-2 py-1 text-xs bg-red-100 text-red-700 rounded">
                         {item.availability?.status}
+                      </span>
+                    )}
+                    {/* Product Variant Options */}
+                    {getVariantOptionsString(item) && (
+                      <span className="text-xs text-gray-600 bg-gray-100 rounded px-2 py-1 ml-1">
+                        {getVariantOptionsString(item)}
                       </span>
                     )}
                   </div>

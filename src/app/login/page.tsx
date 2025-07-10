@@ -104,6 +104,9 @@ const LoginPage = () => {
           });
           wixClient.auth.setTokens(tokens);
           router.push("/");
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
           break;
 
         case LoginState.FAILURE:

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@next/font": "^14.2.15",
+    "@wix/contacts": "^1.0.27",
     "@wix/ecom": "^1.0.1219",
     "@wix/members": "^1.0.300",
     "@wix/sdk": "^1.15.23",
