@@ -275,7 +275,7 @@ const NavIcons = () => {
             transition={{ duration: 0.2 }}
             className="absolute bottom-6 right-0 z-20"
           >
-            <CartModal variants={allVariants} />
+            <CartModal variants={allVariants} onClose={() => setIsCartOpen(false)} />
           </motion.div>
         )}
       </AnimatePresence>

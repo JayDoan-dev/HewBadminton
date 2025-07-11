@@ -9,7 +9,13 @@ import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { products } from "@wix/stores";
 
-const CartModal = ({ variants }: { variants?: products.Variant[] }) => {
+const CartModal = ({
+  variants,
+  onClose,
+}: {
+  variants?: products.Variant[];
+  onClose?: () => void;
+}) => {
   const wixClient = useWixClient();
   const { cart, isLoading, removeItem } = useCartStore();
 
@@ -122,7 +128,7 @@ const CartModal = ({ variants }: { variants?: products.Variant[] }) => {
                             {item.quantity} x{" "}
                           </div>
                         )}
-                        {formatter.format(Number(item.price?.amount) || 0)}
+                        {`C${formatter.format(Number(item.price?.amount) || 0)}`}
                       </div>
                     </div>
                     {/* DESC */}
@@ -169,7 +175,7 @@ const CartModal = ({ variants }: { variants?: products.Variant[] }) => {
             <div className="flex items-center justify-between font-semibold">
               <span>Subtotal</span>
               <span>
-                {formatter.format(
+                {`C${formatter.format(
                   cart.lineItems.reduce(
                     (acc, item) =>
                       acc +
@@ -177,7 +183,7 @@ const CartModal = ({ variants }: { variants?: products.Variant[] }) => {
                         (item.quantity ?? 1)),
                     0
                   )
-                )}
+                )}`}
               </span>
             </div>
 
@@ -188,6 +194,7 @@ const CartModal = ({ variants }: { variants?: products.Variant[] }) => {
               <Link
                 href="/cart"
                 className="rounded-md py-3 px-4 ring-1 ring-gray-300 hover:bg-gray-100 transition-colors"
+                onClick={onClose}
               >
                 View Cart
               </Link>

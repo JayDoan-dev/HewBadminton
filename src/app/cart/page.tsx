@@ -153,7 +153,7 @@ const CartPage = () => {
                       {item.productName?.original}
                     </h3>
                     <div className="text-lg font-medium text-gray-800">
-                      {formatter.format(Number(item.price?.amount) || 0)}
+                      {`C${formatter.format(Number(item.price?.amount) || 0)}`}
                     </div>
                   </div>
                   <div className="text-sm text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
@@ -211,14 +211,14 @@ const CartPage = () => {
         <div className="flex justify-between mb-2">
           <span>Subtotal</span>
           <span>
-            {formatter.format(
+            {`C${formatter.format(
               cart.lineItems?.reduce(
                 (sum, item) =>
                   sum +
                   (Number(item.price?.amount) || 0) * (item.quantity || 1),
                 0
               ) || 0
-            )}
+            )}`}
           </span>
         </div>
 
@@ -237,14 +237,14 @@ const CartPage = () => {
         <div className="flex justify-between text-lg font-semibold mb-4">
           <span>Total</span>
           <span>
-            {formatter.format(
+            {`C${formatter.format(
               cart.lineItems?.reduce(
                 (sum, item) =>
                   sum +
                   (Number(item.price?.amount) || 0) * (item.quantity || 1),
                 0
               ) || 0
-            )}
+            )}`}
           </span>
         </div>
         <form className="mt-6 mb-4 flex gap-2" onSubmit={(e) => e.preventDefault()}>
