@@ -32,7 +32,7 @@ export default async function BestDealsPage({
 
         <ProductList
           categoryId={categoryId}
-          searchParams={searchParams}
+          searchParams={{ ...searchParams, noPagination: true }}
           showOnlyDiscounted
           limit={12}
         />

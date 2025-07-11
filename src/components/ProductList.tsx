@@ -5,7 +5,7 @@ import Link from "next/link";
 import DOMPurify from "isomorphic-dompurify";
 import Pagination from "./Pagination";
 
-const PRODUCT_PER_PAGE = 8;
+const PRODUCT_PER_PAGE = 16;
 
 const stripHTML = (html: string): string => {
   return html.replace(/<[^>]+>/g, "").trim();
@@ -43,40 +43,58 @@ const ProductList = async ({
 
   if (searchParams?.sort) {
     const [sortType, sortBy] = searchParams.sort.split(" ");
-    if (sortType === "asc") {
-      productQuery.ascending(sortBy);
-    }
-    if (sortType === "desc") {
-      productQuery.descending(sortBy);
+    // Try API sort for supported fields
+    const apiSortableFields = ["name", "price", "priceData.price", "createdDate"]; // Add more if needed
+    if (apiSortableFields.includes(sortBy)) {
+      if (sortType === "asc") {
+        productQuery.ascending(sortBy);
+      }
+      if (sortType === "desc") {
+        productQuery.descending(sortBy);
+      }
     }
   }
 
   const res = await productQuery.find();
-
   let filteredItems = res.items;
 
-  if (searchParams?.brand) {
-    filteredItems = filteredItems.filter((product: products.Product) => {
-      const brandSection = product.additionalInfoSections?.find(
-        (section: any) => section.title?.toLowerCase().trim() === "brand"
-      );
-
-      const rawDescription = brandSection?.description || "";
-      const brandValue = stripHTML(rawDescription).toLowerCase();
-
-      return brandValue === searchParams.brand.toLowerCase().trim();
-    });
+  // Fallback: JS-side sort for common fields if API sort didn't work
+  if (searchParams?.sort) {
+    const [sortType, sortBy] = searchParams.sort.split(" ");
+    if (!filteredItems.length || filteredItems.length === 1) {
+      // nothing to sort
+    } else if (sortBy === "price" || sortBy === "priceData.price") {
+      filteredItems = filteredItems.slice().sort((a, b) => {
+        const aPrice = a.priceData?.discountedPrice ?? a.priceData?.price ?? 0;
+        const bPrice = b.priceData?.discountedPrice ?? b.priceData?.price ?? 0;
+        return sortType === "asc" ? aPrice - bPrice : bPrice - aPrice;
+      });
+    } else if (sortBy === "name") {
+      filteredItems = filteredItems.slice().sort((a, b) => {
+        const aName = a.name?.toLowerCase() ?? "";
+        const bName = b.name?.toLowerCase() ?? "";
+        return sortType === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
+      });
+    } else if (sortBy === "createdDate" || sortBy === "_createdDate") {
+      filteredItems = filteredItems.slice().sort((a, b) => {
+        const aDate = new Date(a._createdDate ?? 0).getTime();
+        const bDate = new Date(b._createdDate ?? 0).getTime();
+        return sortType === "asc" ? aDate - bDate : bDate - aDate;
+      });
+    }
   }
 
-    if (showOnlyDiscounted) {
-    filteredItems = filteredItems.filter(
+  let filteredAndSortedItems = filteredItems;
+
+  if (showOnlyDiscounted) {
+    filteredAndSortedItems = filteredAndSortedItems.filter(
       (product: products.Product) =>
         typeof product.priceData?.discountedPrice === "number" &&
         typeof product.priceData?.price === "number" &&
         product.priceData.discountedPrice < product.priceData.price
     );
 
-    filteredItems.sort((a: products.Product, b: products.Product) => {
+    filteredAndSortedItems.sort((a: products.Product, b: products.Product) => {
       const discountA =
         (((a.priceData?.price ?? 0) - (a.priceData?.discountedPrice ?? 0)) /
           (a.priceData?.price ?? 1)) *
@@ -98,7 +116,7 @@ const ProductList = async ({
   return (
     <>
       <div className="mt-12 grid gap-x-8 gap-y-16 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {filteredItems.map((product: products.Product) => (
+        {filteredAndSortedItems.map((product: products.Product) => (
           <Link href={"/" + product.slug} className="group" key={product._id}>
             <div className="flex flex-col gap-4 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
               <div className="relative w-full h-80 rounded-t-2xl overflow-hidden bg-white p-4">
@@ -183,14 +201,16 @@ const ProductList = async ({
           </Link>
         ))}
       </div>
-
-      <div className="mt-12 flex justify-center">
-        <Pagination
-          currentPage={res.currentPage || 0}
-          hasPrev={res.hasPrev()}
-          hasNext={res.hasNext()}
-        />
-      </div>
+      {/* Conditionally render Pagination: hide for BestDealsPage (deals) */}
+      {!(searchParams && searchParams.noPagination) && (
+        <div className="mt-12 flex justify-center">
+          <Pagination
+            currentPage={res.currentPage || 0}
+            hasPrev={res.hasPrev()}
+            hasNext={res.hasNext()}
+          />
+        </div>
+      )}
     </>
   );
 };
